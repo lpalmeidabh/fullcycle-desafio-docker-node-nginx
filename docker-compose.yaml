@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  db: 
+    build:
+      context: ./sql
+      dockerfile: Dockerfile     
+    container_name: db
+    restart: always
+    tty: true
+    environment: 
+      MYSQL_DATABASE: nodedb
+      MYSQL_ROOT_PASSWORD: root
+    volumes: 
+      - ./mysql:/var/lib/mysql
+      - ./sql/create.sql:/data/application/create.sql
+    networks: 
+      - nodenet
+    
+  app: 
+    build: 
+      context: nodejs
+    container_name: app
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 60s docker-entrypoint.sh
+    tty: true
+    working_dir: /usr/src/app
+    volumes: 
+      - ./nodejs:/usr/src/app    
+    networks: 
+      - nodenet
+    depends_on: 
+      - db
+    command: node index.js
+
+  nginx: 
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile.node.prod
+    image: lpalmeidabh/nginx-node:prod
+    container_name: nginx
+    tty: true
+    networks: 
+      - nodenet
+    ports:
+      - 8080:80
+    depends_on:
+      - app
+      - db
+  
+
+networks:
+  nodenet:
+    driver: bridge
