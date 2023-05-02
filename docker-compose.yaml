@@ -19,18 +19,20 @@ services:
     
   app: 
     build: 
-      context: nodejs
+      context: ./nodejs
     container_name: app
+    working_dir: /usr/src/app
     entrypoint: dockerize -wait tcp://db:3306 -timeout 60s docker-entrypoint.sh
     tty: true
-    working_dir: /usr/src/app
     volumes: 
-      - ./nodejs:/usr/src/app    
+      - ./nodejs:/usr/src/app
+      - /usr/src/app/node_modules    
     networks: 
       - nodenet
     depends_on: 
       - db
-    command: node index.js
+    command: npm start
+    
 
   nginx: 
     build: 
